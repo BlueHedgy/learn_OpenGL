@@ -1,0 +1,8 @@
+﻿  Main.cpp
+G:\Visual Studio Project\openGLProject\openGL_going3D\Main.cpp(354,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  camera_class.cpp
+G:\Visual Studio Project\openGLProject\openGL_going3D\camera_class.cpp(26,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+G:\Visual Studio Project\openGLProject\openGL_going3D\camera_class.cpp(47,25): warning C4805: '==': unsafe mix of type 'GLboolean' and type 'bool' in operation
+  Generating Code...
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  openGL_going3D.vcxproj -> G:\Visual Studio Project\openGLProject\x64\Debug\openGL_going3D.exe
