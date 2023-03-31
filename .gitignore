@@ -396,3 +396,13 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# My local files and directories
+openGLProject/
+# G:/Visual Studio Project/openGLProject/openGL_GettingStarted/openGL_GettingStarted.vcxproj
+# G:/Visual Studio Project/openGLProject/openGL_GettingStarted/openGL_GettingStarted.vcxproj.filters
+# G:/Visual Studio Project/openGLProject/openGL_GettingStarted/openGL_GettingStarted.vcxproj.user
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
