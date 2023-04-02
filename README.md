@@ -5,3 +5,5 @@ The codes in here mostly align with Joey De Vries' example with some of my perso
 
 Libraries used: GLFW3, GLM, GLAD
 I will continue to update this as i go through the process.
+
+![Result of the getting started section:] https://streamable.com/j56e3g
