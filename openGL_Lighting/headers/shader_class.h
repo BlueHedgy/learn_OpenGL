@@ -81,15 +81,15 @@ public:
 
 	// set Values for variables in vertex and fragment shaders
 
-	void setBool(std::string &name, bool value) const {
+	void setBool(const std::string &name, bool value) const {
 		glUniform1i(glGetUniformLocation(ID, name.c_str()), (int) value);
 	}
 
-	void setInt(std::string &name, int value) const {
+	void setInt(const std::string &name, int value) const {
 		glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 	}
 
-	void setFloat(std::string& name, float value) const {
+	void setFloat(const std::string& name, float value) const {
 		glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 	}
 
@@ -133,12 +133,20 @@ private:
 		char infoLog[1024];
 
 		if (type != "PROGRAM") {
-			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "ERROR COMPILING SHADER, TYPE :" << type << std::endl;
+			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+			if (!success) {
+				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+				std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << type <<
+					"\n" << infoLog << std::endl;
+			};
 		}
 		else {
-			glGetShaderInfoLog(ID, 1024, NULL, infoLog);
-			std::cout << "ERROR LINKING SHADE, TYPE :" << type << infoLog << std::endl;
+			glGetProgramiv(shader, GL_LINK_STATUS, &success);
+			if (!success) {
+				glGetProgramInfoLog(ID, 1024, NULL, infoLog);
+				std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << type <<
+					"\n" << infoLog << std::endl;
+			}
 		}
 	}
 };

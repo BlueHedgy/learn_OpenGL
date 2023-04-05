@@ -36,6 +36,14 @@ void Camera::processKBInput(cameraMovement direction, float deltaTime) {
 	if (direction == RIGHT) {
 		Position += Right * velocity;
 	}
+
+	if (direction == ASCEND) {
+		Position += WorldUp * 0.5f * velocity;
+	}
+
+	if (direction == DESCEND) {
+		Position -= WorldUp * 0.5f * velocity;
+	}
 }
 
 // general input processing for mouse like system, expect offset in both x and y direction

@@ -17,7 +17,9 @@ enum cameraMovement {
 	FORWARD,
 	BACKWARD,
 	LEFT,
-	RIGHT
+	RIGHT,
+	ASCEND,
+	DESCEND
 };
 
 
@@ -25,7 +27,7 @@ enum cameraMovement {
 const float YAW			= -90.0f;
 const float PITCH		= 0.0f;
 const float SPEED		= 3.0f;
-const float SENSITIVITY = 1.0f;
+const float SENSITIVITY = 0.1f;
 const float FOV			= 45.0f;
 
 
@@ -57,6 +59,7 @@ public:
 			:
 			Front(glm::vec3(0.0f, 0.0f, -1.0f)),
 			CameraSpeed(SPEED),
+			MouseSensitivity(SENSITIVITY),
 			Zoom(FOV)
 	{
 		Position = position;
