@@ -95,6 +95,44 @@ void processInput(GLFWwindow* window) {
 	}
 }
 
+unsigned int loadImageTexture(char const* texturePath) {
+	GLuint textureID;
+
+	glGenTextures(1, &textureID);
+	
+	// load images with stbi
+	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load(texturePath, &width, &height, &nrChannels, 0);
+
+	// --- Generate the 2d texture
+	if (data) {
+		GLenum format{};
+		if (nrChannels == 1) format = GL_RED;
+		else if (nrChannels == 3) format = GL_RGB;
+		else if (nrChannels == 4) format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		stbi_image_free(data);
+	}
+	else {
+		std::cout << "Texture load unsuccesfully" << std::endl;
+	}
+
+	return textureID;
+}
+
+
 int main() {
 	glfwInit();
 
@@ -162,6 +200,7 @@ int main() {
 // ------------------------------------------------------------
 	GLuint VBO;
 	GLuint cubeVAO, lightVAO;
+	
 
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
@@ -173,19 +212,31 @@ int main() {
 
 	// Set vertex attributes pointers
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// Configure light attributes data
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// Declaring and loading image texture maps
+	GLuint diffuseMap = loadImageTexture("../img/container2.png");
+	GLuint specularMap = loadImageTexture("../img/container2_specular.png");
+
+	cubeShader.use();
+	cubeShader.setInt("diffuseMap", 0);
+	cubeShader.setInt("specularMap", 1);
+
 
 	// Some preset values for the render loops
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -195,6 +246,12 @@ int main() {
 // -------------------------------------------------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);
 
 		// rendering commands
 		glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
@@ -207,6 +264,7 @@ int main() {
 	// ACTIVATE THE CUBE SHADER
 	// ------------------------------------------------------------
 		cubeShader.use();
+		glm::vec3 lightColor(1.0f);
 
 		// RENDER MODIFICATIONS
 		// ---------------------
@@ -215,8 +273,26 @@ int main() {
 		cubeShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		cubeShader.setVec3("lightPos", lightPos);
 
+		
+	/*	lightColor.x = sin(glfwGetTime() * 2.0f);
+		lightColor.y = sin(glfwGetTime() * 0.7f);
+		lightColor.z = sin(glfwGetTime() * 1.3f);*/
 
-		// GET DISPLAY MATRICES
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+		glm::vec3 ambientColor = lightColor * glm::vec3(0.2f);
+
+		cubeShader.setVec3("light.ambient", ambientColor);
+		cubeShader.setVec3("light.diffuse", diffuseColor);
+		cubeShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+		cubeShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+		cubeShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		cubeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		cubeShader.setFloat("material.shininess", 32.0f);
+		
+		
+	
+		// GET AND PASS DISPLAY MATRICES
 		// --------------------
 		glm::mat4 model			= glm::mat4(1.0f);
 		glm::mat4 viewMat		= camPerspective.GetViewMatrix();
@@ -244,17 +320,19 @@ int main() {
 
 		// RENDER MODIFICATIONS
 		// ---------------------
+	/*	lightPos.x = cos(glfwGetTime()) * 1.0f;
+		lightPos.z = sin(glfwGetTime()) * 1.0f;*/
 		
-		glm::vec4 lampColor(1.0f, 1.0f, (float)sin(glfwGetTime())*1.0f, 1.0f);
+		//glm::vec4 lampColor(1.0f, 1.0f, (float)sin(glfwGetTime())*1.0f, 1.0f);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));
-
+		
 
 		lampShader.setMat4("model", model);
 		lampShader.setMat4("projectMat", projectMat);
 		lampShader.setMat4("viewMat", viewMat);
-		lampShader.setVec4("lampColor", lampColor);
+		lampShader.setVec4("lampColor", glm::vec4(lightColor.x, lightColor.y, lightColor.z, 0.5f));
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);

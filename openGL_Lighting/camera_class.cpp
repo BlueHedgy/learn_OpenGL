@@ -23,7 +23,7 @@ void Camera::updateCameraVectors() {
 
 // general input processing from any keyboard like system
 void Camera::processKBInput(cameraMovement direction, float deltaTime) {
-	float velocity = CameraSpeed * deltaTime * 3.0;
+	float velocity = CameraSpeed * deltaTime * 1.5;
 	if (direction == FORWARD) {
 		Position += Front * velocity;
 	}
