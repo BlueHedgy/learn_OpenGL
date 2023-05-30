@@ -154,12 +154,15 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
 
+	// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+	stbi_set_flip_vertically_on_load(true);
+
 
 	// INITIALIZE SHADERS AND RELEVANT OBJECTS
 	std::string object_path = "backpack/backpack.obj";
 	//std::string object_path = "D:/3D projects/Bows and Arrows/Bow models.obj";
 	Model ourModel(object_path);
-	Shader ourShader("model_vShader.vert", "mode_fShader.frag");
+	Shader ourShader("model_vShader.vert", "model_fShader.frag");
 
 	// RENDER LOOP
 	// -------------------------------------------------------------------------------------------------
@@ -178,10 +181,10 @@ int main() {
 		// Activate the shader
 		ourShader.use();
 
-		
+
 		glm::mat4 projectMat = glm::perspective(glm::radians(camPerspective.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 viewMat = camPerspective.GetViewMatrix();
-		
+
 		ourShader.setMat4("projection", projectMat);
 		ourShader.setMat4("view", viewMat);
 

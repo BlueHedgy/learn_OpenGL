@@ -2,7 +2,7 @@
  
 
 void Model::Draw(Shader& shader) {
-	for (GLuint i = 0; i < meshes_list.size(); i++) {
+	for (unsigned int i = 0; i < meshes_list.size(); i++) {
 		meshes_list[i].Draw(shader);
 	}
 }
@@ -11,7 +11,7 @@ void Model::Draw(Shader& shader) {
 // Create a new Assimp importer for model loading
 void Model::loadModel(std::string const &path) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);  // aiProcess_FlipUVs help inverting the y axis
+	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);  // aiProcess_FlipUVs help inverting the y axis
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -28,12 +28,12 @@ void Model::loadModel(std::string const &path) {
 
 void Model::processNode(aiNode* node, const aiScene* scene) {
 	// process current node's list of mesh
-	for (GLuint i = 0; i < node->mNumMeshes; i++) {
+	for (unsigned int i = 0; i < node->mNumMeshes; i++) {
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		meshes_list.push_back(processMesh(mesh, scene));
 	}
 
-	for (GLuint i = 0; i < node->mNumChildren; i++) {
+	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 		processNode(node->mChildren[i], scene);
 	}
 }
@@ -42,10 +42,10 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
 // process the mesh indicated by index from processNode, organize the data into a Mesh object
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
+	std::vector<unsigned int> indices;
 	std::vector<Texture> textures;
 
-	for (GLuint i = 0; i < mesh->mNumVertices; i++) {
+	for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		Vertex vertex;
 
 		//process vertices position
@@ -71,16 +71,16 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 			texCoordsVec.y = mesh->mTextureCoords[0][i].y;
 			vertex.TexCoords = texCoordsVec;
 
-			//// tangent
-			//vector.x = mesh->mTangents[i].x;
-			//vector.y = mesh->mTangents[i].y;
-			//vector.z = mesh->mTangents[i].z;
-			//vertex.Tangent = vector;
-			//// bitangent
-			//vector.x = mesh->mBitangents[i].x;
-			//vector.y = mesh->mBitangents[i].y;
-			//vector.z = mesh->mBitangents[i].z;
-			//vertex.Bitangent = vector;
+			// tangent
+			vector.x = mesh->mTangents[i].x;
+			vector.y = mesh->mTangents[i].y;
+			vector.z = mesh->mTangents[i].z;
+			vertex.Tangent = vector;
+			// bitangent
+			vector.x = mesh->mBitangents[i].x;
+			vector.y = mesh->mBitangents[i].y;
+			vector.z = mesh->mBitangents[i].z;
+			vertex.Bitangent = vector;
 
 		}
 		else {
@@ -90,15 +90,15 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	}
 
 	// process indices
-	for (GLuint i = 0; i < mesh->mNumFaces; i++) {
+	for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
 		aiFace face = mesh->mFaces[i];
-		for (GLuint j = 0; j < face.mNumIndices; j++) {
+		for (unsigned int j = 0; j < face.mNumIndices; j++) {
 			indices.push_back(face.mIndices[j]);
 		}
 	}
 
 	// process materials
-	if (mesh->mMaterialIndex >= 0) {
+	//if (mesh->mMaterialIndex >= 0) {
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
 		std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
@@ -114,7 +114,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 		std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-	}
+	//}
 
 	return Mesh(vertices, indices, textures);
 }
@@ -122,15 +122,15 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName) {
 	std::vector<Texture> textures;
 
-	for (GLuint i = 0; i < mat->GetTextureCount(type); i++) {
+	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
 		aiString str;
 		mat->GetTexture(type, i, &str);
 		bool skip = false;
 
-		for (GLuint j = 0; j < textures_loaded.size(); j++) {
+		for (unsigned int j = 0; j < textures_loaded.size(); j++) {
 			if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0) {
 				textures.push_back(textures_loaded[j]);
-				skip = true;
+				skip = true; // skip if a texture witht he same filepath is already loaded
 				break;
 			}
 		}
@@ -148,28 +148,26 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 	return textures;
 }
 
-GLuint Model::TextureFromFile(const char* path, const std::string& directory, bool gamma) {
+unsigned int Model::TextureFromFile(const char* path, const std::string& directory, bool gamma) {
 	std::string filename = std::string(path);
 
 	filename = directory + '/' + filename;
 
-	GLuint textureID;
+	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
 	// load images with stbi
-	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(true);
-
-	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 
 
 	// generate the 2d texture
 
 	if (data) {
 		GLenum format;
-		if (nrChannels == 1) format = GL_RED;
-		else if (nrChannels == 3) format = GL_RGB;
-		else if (nrChannels == 4) format = GL_RGBA;
+		if (nrComponents == 1) format = GL_RED;
+		else if (nrComponents == 3) format = GL_RGB;
+		else if (nrComponents == 4) format = GL_RGBA;
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
 

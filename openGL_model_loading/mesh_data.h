@@ -1,3 +1,6 @@
+#ifndef MESH_DATA_H
+#define MESH_DATA_H
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -13,21 +16,18 @@
 #define MAX_BONE_INFLUENCE 4
 
 
-
-#ifndef MESH_DATA_H
-#define	MESH_DATA_H
 struct Vertex {
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec2 TexCoords;
-	//// tangent
-	//glm::vec3 Tangent;
-	//// bitangent
-	//glm::vec3 Bitangent;
-	////bone indexes which will influence this vertex
-	//int m_BoneIDs[MAX_BONE_INFLUENCE];
-	////weights from each bone
-	//float m_Weights[MAX_BONE_INFLUENCE];
+	// tangent
+	glm::vec3 Tangent;
+	// bitangent
+	glm::vec3 Bitangent;
+	//bone indexes which will influence this vertex
+	int m_BoneIDs[MAX_BONE_INFLUENCE];
+	//weights from each bone
+	float m_Weights[MAX_BONE_INFLUENCE];
 };
 
 struct Texture {
@@ -38,10 +38,10 @@ struct Texture {
 
 class Mesh {
 public: 
-	std::vector<Vertex>		vertices;
-	std::vector<unsigned int>		indices;
-	std::vector<Texture>	textures;
-
+	std::vector<Vertex>	vertices;
+	std::vector<unsigned int> indices;
+	std::vector<Texture> textures;
+	unsigned int VAO;
 
 	// constructor
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
@@ -55,7 +55,7 @@ public:
 	void Draw(Shader& shader);
 
 private:
-	unsigned int VAO, VBO, EBO;
+	unsigned int VBO, EBO;
 	void setupMesh();
 };
 

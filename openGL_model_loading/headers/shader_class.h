@@ -2,6 +2,7 @@
 #define SHADER_H
 
 #include <glad/glad.h>
+#include <glm/glm/glm.hpp>
 
 #include <string>
 #include <fstream>
@@ -12,7 +13,7 @@
 class Shader {
 public:
 
-	GLuint ID; //shader ID
+	unsigned int ID; //shader ID
 
 	Shader(const char* vertexShaderPath, const char* fragmentShaderPath) {   
 		std::string vertexCode, fragmentCode;	
@@ -151,4 +152,4 @@ private:
 	}
 };
 
-#endif // !SHADER_H
+#endif

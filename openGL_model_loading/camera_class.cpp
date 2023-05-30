@@ -66,7 +66,7 @@ void Camera::processMouseInput(float xOffset, float yOffset, GLboolean constrain
 
 // process input from scrollwheel, only expect offset in y direction
 void Camera::processScrollInput(float yOffset) {
-	Zoom -= 3 * yOffset;
+	Zoom -= 3 * (float)yOffset;
 	if (Zoom < 1.0f) {
 		Zoom = 1.0f;
 	}
