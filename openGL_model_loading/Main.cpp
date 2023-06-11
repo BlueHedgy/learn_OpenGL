@@ -155,12 +155,13 @@ int main() {
 	glEnable(GL_MULTISAMPLE);
 
 	// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 
 
 	// INITIALIZE SHADERS AND RELEVANT OBJECTS
-	std::string object_path = "backpack/backpack.obj";
+	//std::string object_path = "backpack/backpack.obj";
 	//std::string object_path = "D:/3D projects/Bows and Arrows/Bow models.obj";
+	std::string object_path = "G:/Visual Studio Project/microphone object/untitled.obj";
 	Model ourModel(object_path);
 	Shader ourShader("model_vShader.vert", "model_fShader.frag");
 
@@ -170,7 +171,7 @@ int main() {
 		processInput(window);
 
 		// rendering commands
-		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		float currentFrame = static_cast<float>(glfwGetTime());
@@ -190,7 +191,7 @@ int main() {
 
 		glm::mat4 model(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+		model = glm::scale(model, glm::vec3(20.0f, 20.0f, 20.0f));	// it's a bit too big for our scene, so scale it down
 		ourShader.setMat4("model", model);
 		ourModel.Draw(ourShader);
 
