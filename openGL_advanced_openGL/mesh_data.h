@@ -10,9 +10,9 @@
 
 #include "shader_class.h"
 #include "camera_class.h"
-#include "primitive_cube.h"
 #include "stb_image.h"
 
+#include <vector>
 #define MAX_BONE_INFLUENCE 4
 
 

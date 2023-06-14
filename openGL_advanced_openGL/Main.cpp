@@ -9,8 +9,8 @@
 #include "camera_class.h"
 #include "stb_image.h"
 #include "model.h"
-#include "primitive_plane.h"
 #include "primitive_cube.h"
+#include "primitive_plane.h"
 
 #include <vector>
 #include <iostream>
@@ -120,11 +120,11 @@ unsigned int loadImageTexture(char const* texturePath) {
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);
 	}
@@ -193,7 +193,7 @@ int main() {
 	// CONFIGURE OPENGL GLOBAL STATE
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
+	glDepthFunc(GL_LESS); // discard fragments further away
 
 	glEnable(GL_MULTISAMPLE);
 
@@ -217,7 +217,7 @@ int main() {
 	glGenBuffers(1, &cubeVBO);
 	glBindVertexArray(cubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertice_cube1), &vertice_cube1.front(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertice_cube1.size() * sizeof(float), &vertice_cube1.front(), GL_STATIC_DRAW);
 
 	// position
 	glEnableVertexAttribArray(0);
@@ -240,21 +240,24 @@ int main() {
 	glGenBuffers(1, &planeVBO);
 	glBindVertexArray(planeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertice_plane1), &vertice_plane1.front(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertice_plane1.size() * sizeof(float), &vertice_plane1.front(), GL_STATIC_DRAW);
 
 	// position
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	// texCoords
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	// reserved normals
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	// texCoords
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 
 	glBindVertexArray(0);
 
 
 	// load textures
 	GLuint cubeTexture = loadImageTexture("img/marble.jpg");
-	GLuint floorTexture = loadImageTexture("img/metal.jpg");
+	GLuint floorTexture = loadImageTexture("img/metal.png");
 
 	ourShader.use();
 	ourShader.setInt("texture1", 0);
@@ -276,19 +279,34 @@ int main() {
 		// Activate the shader
 		ourShader.use();
 
-
+		glm::mat4 model(1.0f);
 		glm::mat4 projectMat = glm::perspective(glm::radians(camPerspective.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 viewMat = camPerspective.GetViewMatrix();
 
 		ourShader.setMat4("projection", projectMat);
 		ourShader.setMat4("view", viewMat);
 
-		glm::mat4 model(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(20.0f, 20.0f, 20.0f));	// it's a bit too big for our scene, so scale it down
+		// cubes
+		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f)); 
 		ourShader.setMat4("model", model);
-		ourModel.Draw(ourShader);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+		ourShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		// floor
+		glBindVertexArray(planeVAO);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		ourShader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+			
 		// Check and call events, swap buffers*
 		glfwSwapBuffers(window);
 		glfwPollEvents();
