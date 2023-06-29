@@ -204,6 +204,10 @@ int main() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CW);
+
 	glEnable(GL_MULTISAMPLE);
 
 	// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
