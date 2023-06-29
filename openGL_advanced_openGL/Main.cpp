@@ -200,7 +200,9 @@ int main() {
 	glStencilFunc(GL_NOTEQUAL, 1, 0XFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	
-	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
 
 	glEnable(GL_MULTISAMPLE);
 
@@ -215,6 +217,24 @@ int main() {
 
 	Plane plane1;
 	std::vector<float> vertice_plane1 = plane1.Vertices;
+
+	std::vector<glm::vec3> windowObj;
+	windowObj.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+	windowObj.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+	windowObj.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+	windowObj.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+	windowObj.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
+	std::vector<float> transparentVertices = {
+		// positions		// normals	// texture Coords (swapped y coordinates because texture is flipped upside down)
+		0.0f,  0.5f,  0.0f,  0.0f, 0.0f,  0.0f,  0.0f,
+		0.0f, -0.5f,  0.0f,  0.0f, 0.0f,  0.0f,  1.0f,
+		1.0f, -0.5f,  0.0f,  0.0f, 0.0f,  1.0f,  1.0f,
+
+		0.0f,  0.5f,  0.0f,  0.0f, 0.0f,  0.0f,  0.0f,
+		1.0f, -0.5f,  0.0f,  0.0f, 0.0f,  1.0f,  1.0f,
+		1.0f,  0.5f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f
+	};
 
 	Shader viewportShader("stencil_testing.vert", "stencil_testing.frag");
 	Shader objectOutline("stencil_testing.vert", "objectOutline.frag");
@@ -263,10 +283,32 @@ int main() {
 
 	glBindVertexArray(0);
 
+	// windowObj VA0
+	GLuint windowObjVAO, windowObjVBO;
+	glGenVertexArrays(1, &windowObjVAO);
+	glGenBuffers(1, &windowObjVBO);
+	
+	glBindVertexArray(windowObjVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, windowObjVBO);
+	glBufferData(GL_ARRAY_BUFFER, transparentVertices.size() * sizeof(float), &transparentVertices.front(), GL_STATIC_DRAW);
+
+	// position
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+	// reserved normals
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+	// texCoords
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(5 * sizeof(float)));
+
+	glBindVertexArray(0);
 
 	// load textures
 	GLuint cubeTexture = loadImageTexture("img/marble.jpg");
 	GLuint floorTexture = loadImageTexture("img/metal.png");
+	GLuint grassTexture = loadImageTexture("img/grass.png");
+	GLuint windowTexture = loadImageTexture("img/blending_transparent_window.png");
 
 	viewportShader.use();
 	viewportShader.setInt("texture1", 0);
@@ -333,33 +375,55 @@ int main() {
 
 		glBindVertexArray(0);
 
-		// Draw outlines
-		// ------------------------------------------------------
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		glDisable(GL_DEPTH_TEST);
-		objectOutline.use();
-		float scale = 1.01f;
+		//// Draw outlines
+		//// ------------------------------------------------------
+		//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		//glStencilMask(0x00);
+		//glDisable(GL_DEPTH_TEST);
+		//objectOutline.use();
+		//float scale = 1.01f;
 
-		glBindVertexArray(cubeVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-		model = glm::scale(model, glm::vec3(scale, scale, scale));
-		objectOutline.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glBindVertexArray(cubeVAO);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		//model = glm::mat4(1.0f);
+		//model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+		//model = glm::scale(model, glm::vec3(scale, scale, scale));
+		//objectOutline.setMat4("model", model);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(scale, scale, scale));
-		objectOutline.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
+		//model = glm::mat4(1.0f);
+		//model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+		//model = glm::scale(model, glm::vec3(scale, scale, scale));
+		//objectOutline.setMat4("model", model);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glBindVertexArray(0);
 
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		glEnable(GL_DEPTH_TEST);
+		//glStencilMask(0xFF);
+		//glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		//glEnable(GL_DEPTH_TEST);
+		//
+		// draw windowObj
+		//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		//glStencilMask(0xFF);
+		//
+
+		glBindVertexArray(windowObjVAO);
+		glBindTexture(GL_TEXTURE_2D,windowTexture);
+
+		std::map<float, glm::vec3> sortedObjByDist;
+		for (unsigned int i = 0; i < windowObj.size(); i++) {
+			float dist = glm::length(camPerspective.Position - windowObj[i]);
+			sortedObjByDist[dist] = windowObj[i];
+		}
+
+		std::map<float, glm::vec3>::reverse_iterator it;
+		for (it = sortedObjByDist.rbegin(); it != sortedObjByDist.rend(); it++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, it->second);
+			viewportShader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 
 		// Check and call events, swap buffers*
