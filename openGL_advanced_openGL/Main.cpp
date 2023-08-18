@@ -135,6 +135,28 @@ unsigned int loadImageTexture(char const* texturePath) {
 	return textureID;
 }
 
+GLuint loadTextureForBuffer(char const* texturePath) {
+	GLuint textureID;
+
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// attach texture buffer
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_HEIGHT, SCR_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
+
+	// attach depth and stencil buffer
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, SCR_HEIGHT, SCR_WIDTH, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, textureID, 0);
+
+	return textureID;
+}
+
 void enableStencilPass() {
 
 }
@@ -146,8 +168,8 @@ void disableStencilPass() {
 int main() {
 	glfwInit();
 
-	// SPECIFYING OPENGL VERSION FOR THE APPLICATION WINDOW
-	// ----------------------------------------------------
+// SPECIFYING OPENGL VERSION FOR THE APPLICATION WINDOW
+// ----------------------------------------------------
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -162,8 +184,8 @@ int main() {
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "learnOpenGL_advanced_openGL", NULL, NULL);
 
 
-	// Error initialization check for GLAD and for the window
-	// ------------------------------------------------------
+// Error initialization check for GLAD and for the window
+// ------------------------------------------------------
 
 	if (!window) {
 		std::cout << "Failed to create window" << std::endl;
@@ -191,22 +213,22 @@ int main() {
 	}
 
 
-	// CONFIGURE OPENGL GLOBAL STATE
-	// -----------------------------
+// CONFIGURE OPENGL GLOBAL STATE
+// -----------------------------
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS); // discard fragments further away
+	//glDepthFunc(GL_LESS); // discard fragments further away
 
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_NOTEQUAL, 1, 0XFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendEquation(GL_FUNC_ADD);
+	//glEnable(GL_STENCIL_TEST);
+	//glStencilFunc(GL_NOTEQUAL, 1, 0XFF);
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	//
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glBlendEquation(GL_FUNC_ADD);
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CW);
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
+	//glFrontFace(GL_CW);
 
 	glEnable(GL_MULTISAMPLE);
 
@@ -214,8 +236,8 @@ int main() {
 	//stbi_set_flip_vertically_on_load(true);
 
 
-	// INITIALIZE SHADERS AND RELEVANT OBJECTS
-	// --------------------------------------------------------------------------------------------
+// INITIALIZE SHADERS AND RELEVANT OBJECTS
+// --------------------------------------------------------------------------------------------
 	Cube cube1;
 	std::vector<float> vertice_cube1 = cube1.Vertices;
 
@@ -240,8 +262,21 @@ int main() {
 		1.0f,  0.5f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f
 	};
 
-	Shader viewportShader("stencil_testing.vert", "stencil_testing.frag");
-	Shader objectOutline("stencil_testing.vert", "objectOutline.frag");
+	std::vector<float> quadVertices= { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+	};
+
+	Shader viewportShader("stencil_testing.vert", "stencil_testing.frag");	
+	Shader viewportQuadShader("viewportQuad.vert", "viewportQuad.frag");
+	//Shader objectOutline("stencil_testing.vert", "objectOutline.frag");
+
 
 	// Cube VAO
 	// -------------------------------------------------------------------------------------------
@@ -296,6 +331,7 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, windowObjVBO);
 	glBufferData(GL_ARRAY_BUFFER, transparentVertices.size() * sizeof(float), &transparentVertices.front(), GL_STATIC_DRAW);
 
+
 	// position
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
@@ -308,29 +344,99 @@ int main() {
 
 	glBindVertexArray(0);
 
+	// screen quad VAO, VBO
+	GLuint screenQuadVAO, screenQuadVBO;
+	glGenVertexArrays(1, &screenQuadVAO);
+	glGenBuffers(1, &screenQuadVBO);
+	glBindVertexArray(screenQuadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
+	glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(float), &quadVertices.front(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glBindVertexArray(0);
+
+
 	// load textures
-	GLuint cubeTexture = loadImageTexture("img/marble.jpg");
+	GLuint cubeTexture = loadImageTexture("img/container.jpg");
 	GLuint floorTexture = loadImageTexture("img/metal.png");
 	GLuint grassTexture = loadImageTexture("img/grass.png");
 	GLuint windowTexture = loadImageTexture("img/blending_transparent_window.png");
 
 	viewportShader.use();
 	viewportShader.setInt("texture1", 0);
+	
+	viewportQuadShader.use();
+	viewportQuadShader.setInt("screenTexture", 0);
 
-	// RENDER LOOP
-	// -------------------------------------------------------------------------------------------------
+
+// FRAMEBUFFER CONFIG
+// -----------------------------------------------------------------------------------
+	// frame buffer object
+	GLuint framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+
+	// texture image as color attachment to framebuffer
+	GLuint textureColorbuffer;
+	glGenTextures(1, &textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH*2/3, SCR_HEIGHT*2/3, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	// attach the texture the framebuffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+
+	// render buffer object
+
+	GLuint RBO;
+	glGenRenderbuffers(1, &RBO);
+
+	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600); // allocate memory for renderbuffer object
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "Framebuffer did NOT attach completely successfully";
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind the framebuffer when finish using
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+// RENDER LOOP
+// -------------------------------------------------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
-
-		// rendering commands
-		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	
 
 		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		// bind to target framebuffer and draw scene normally to colortexturebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		glEnable(GL_DEPTH_TEST);
+
+		// clear framebuffer's content
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		
+
+		// rendering SCENE
+		
+		
 
 		// Activate the shader(s)
 		viewportShader.use();
@@ -343,16 +449,16 @@ int main() {
 		viewportShader.setMat4("projection", projectMat);
 		
 
-		objectOutline.use();
+	/*	objectOutline.use();
 		objectOutline.setMat4("view", viewMat);
-		objectOutline.setMat4("projection", projectMat);
+		objectOutline.setMat4("projection", projectMat);*/
 
 
 		// draw objects 
 		// ---------------------------------------------------
-		viewportShader.use();
+
 		// draw floor
-		glStencilMask(0x00);
+		//glStencilMask(0x00);
 
 		glBindVertexArray(planeVAO);
 		glBindTexture(GL_TEXTURE_2D, floorTexture);
@@ -362,8 +468,8 @@ int main() {
 
 		// Draw cubes
 		
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
+		//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		//glStencilMask(0xFF);
 
 		glBindVertexArray(cubeVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -378,6 +484,18 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glBindVertexArray(0);
+
+		// Rebind to default framebuffer and draw the viewportQuad
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST); // so viewportQuad can't be discarded due to depth test
+
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		viewportQuadShader.use();
+		glBindVertexArray(screenQuadVAO);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//// Draw outlines
 		//// ------------------------------------------------------
@@ -412,22 +530,22 @@ int main() {
 		//glStencilMask(0xFF);
 		//
 
-		glBindVertexArray(windowObjVAO);
-		glBindTexture(GL_TEXTURE_2D,windowTexture);
+		//glBindVertexArray(windowObjVAO);
+		//glBindTexture(GL_TEXTURE_2D,windowTexture);
 
-		std::map<float, glm::vec3> sortedObjByDist;
-		for (unsigned int i = 0; i < windowObj.size(); i++) {
-			float dist = glm::length(camPerspective.Position - windowObj[i]);
-			sortedObjByDist[dist] = windowObj[i];
-		}
+		//std::map<float, glm::vec3> sortedObjByDist;
+		//for (unsigned int i = 0; i < windowObj.size(); i++) {
+		//	float dist = glm::length(camPerspective.Position - windowObj[i]);
+		//	sortedObjByDist[dist] = windowObj[i];
+		//}
 
-		std::map<float, glm::vec3>::reverse_iterator it;
-		for (it = sortedObjByDist.rbegin(); it != sortedObjByDist.rend(); it++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, it->second);
-			viewportShader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+		//std::map<float, glm::vec3>::reverse_iterator it;
+		//for (it = sortedObjByDist.rbegin(); it != sortedObjByDist.rend(); it++) {
+		//	model = glm::mat4(1.0f);
+		//	model = glm::translate(model, it->second);
+		//	viewportShader.setMat4("model", model);
+		//	glDrawArrays(GL_TRIANGLES, 0, 6);
+		//}
 
 
 		// Check and call events, swap buffers*
@@ -438,4 +556,4 @@ int main() {
 
 	glfwTerminate();
 	return 0;
-}
+} 
